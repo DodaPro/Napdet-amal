@@ -1,0 +1,43 @@
+Act as an expert Principal Software Engineer, UI/UX Designer, and Full-Stack Developer. I am building a comprehensive micro-donation charity ecosystem consisting of a Web Application (Next.js/React), a Mobile Application (React Native/Expo), and a unified backend (Firebase: Auth, Firestore, Functions).
+
+Project Concept: A platform funding urgent medical operations via "Micro-donations" (e.g., buying a 10 EGP share of a target amount). 
+
+Global UI/UX Guidelines (Web & Mobile):
+- Color Palette: Clean White background, Deep Trust Blue (Primary), and Emerald Green (Secondary/Success).
+- Feel: Trustworthy, transparent, empathetic, smooth, and fast.
+- Web: Mobile-first approach using Tailwind CSS.
+- Mobile: Smooth animations, large touch targets using NativeWind.
+
+System Architecture & Core Features:
+
+1. Web Application (Public Facing - Next.js):
+   - Homepage: Hero section explaining micro-donations. A grid of "Active Urgent Cases" (Cards showing target, progress bar, shares left).
+   - Case Details Page: Story, blurred medical reports, dynamic donation input (select number of shares), and a "Community Board" for voting on extra side-expenses.
+   - Payment Flow: Modal showing donation amount + optional toggle to "Cover Payment Gateway Fees".
+   - Transparency Page: Showing successfully funded cases with a "Mission Accomplished" stamp.
+
+2. Mobile Application (Public Facing - React Native/Expo):
+   - Navigation: Bottom Tab Navigation (Home, Closed Cases, Community Votes, Profile).
+   - Home Feed: Vertical scroll feed of urgent cases with a quick "One-Tap Donate" button.
+   - Case Details Screen: Horizontal scroll of verified medical documents, and a floating action button (FAB) "Buy Shares".
+   - Donation Bottom Sheet: A smooth bottom sheet with a slider or (+ / -) buttons to select shares and cover fees.
+
+3. Admin Dashboard & RBAC (Next.js - Web Only):
+   - Super Admin: Full access. Can view all data, edit cases, and a "Staff Management" page to assign roles.
+   - Sub-Admins/Moderators: Restricted access (e.g., only verify medical reports, or publish new cases).
+   - Dashboard UI: Sidebar navigation, overview metrics (total donations, active/closed cases).
+
+Execution Plan (Strictly Step-by-Step):
+I want to build this systematically. Please DO NOT generate the entire codebase at once. Follow this order, and WAIT for my command after each step:
+
+- Step 1 (Database & Architecture): Design the unified Firebase Firestore Schema (Users, Roles, Cases, Donations, Votes). 
+- Step 2 (Web Foundation): Generate Next.js setup, Tailwind config, responsive Navbar, and the "Active Urgent Case Card" component.
+- Step 3 (Web Pages): Build the Web Homepage and Case Details page UI.
+- Step 4 (Mobile Foundation): Generate React Native (Expo) setup, Bottom Tab Navigation, and the Mobile "Home Feed Case Card".
+- Step 5 (Mobile Pages): Build the Mobile Case Details and Donation Bottom Sheet UI.
+- Step 6 (Admin Panel): Build the Admin Dashboard layout and Staff Management UI.
+
+Please acknowledge this massive architecture by summarizing the plan and providing ONLY the output for Step 1. Wait for my prompt to proceed to Step 2.
+
+
+Note: Please make all UI text and dummy data in Arabic with RTL (Right-to-Left) support, and use EGP (جنيه) as the currency.

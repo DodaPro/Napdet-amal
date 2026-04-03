@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Micro-donation charity platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: cases
+    description: Medical case operations
+  - name: donations
+    description: Donation operations
+  - name: votes
+    description: Community vote operations
+  - name: users
+    description: User operations
+  - name: stats
+    description: Dashboard statistics
 paths:
   /healthz:
     get:
@@ -24,6 +34,384 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /cases:
+    get:
+      operationId: listCases
+      tags: [cases]
+      summary: List all cases
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, funded, closed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of cases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Case"
+    post:
+      operationId: createCase
+      tags: [cases]
+      summary: Create a new case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCaseBody"
+      responses:
+        "201":
+          description: Case created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Case"
+
+  /cases/{id}:
+    get:
+      operationId: getCase
+      tags: [cases]
+      summary: Get case by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Case details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Case"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateCase
+      tags: [cases]
+      summary: Update case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCaseBody"
+      responses:
+        "200":
+          description: Case updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Case"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteCase
+      tags: [cases]
+      summary: Delete case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /cases/{id}/donate:
+    post:
+      operationId: donateToCase
+      tags: [cases, donations]
+      summary: Make a donation to a case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DonateBody"
+      responses:
+        "201":
+          description: Donation recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donation"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /donations:
+    get:
+      operationId: listDonations
+      tags: [donations]
+      summary: List all donations
+      parameters:
+        - name: caseId
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of donations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Donation"
+
+  /votes:
+    get:
+      operationId: listVotes
+      tags: [votes]
+      summary: List community votes
+      parameters:
+        - name: caseId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, closed]
+      responses:
+        "200":
+          description: List of votes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vote"
+    post:
+      operationId: createVote
+      tags: [votes]
+      summary: Create a vote topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVoteBody"
+      responses:
+        "201":
+          description: Vote created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vote"
+
+  /votes/{id}:
+    get:
+      operationId: getVote
+      tags: [votes]
+      summary: Get vote by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vote details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vote"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /votes/{id}/cast:
+    post:
+      operationId: castVote
+      tags: [votes]
+      summary: Cast a vote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CastVoteBody"
+      responses:
+        "200":
+          description: Vote cast
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vote"
+
+  /stats/overview:
+    get:
+      operationId: getStatsOverview
+      tags: [stats]
+      summary: Get platform overview stats
+      responses:
+        "200":
+          description: Overview statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsOverview"
+
+  /stats/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [stats]
+      summary: Get recent donation activity feed
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users (admin only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create or register a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +422,346 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Case:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        patientName:
+          type: string
+        patientAge:
+          type: integer
+        hospital:
+          type: string
+        targetAmount:
+          type: number
+        collectedAmount:
+          type: number
+        sharePrice:
+          type: number
+        totalShares:
+          type: integer
+        soldShares:
+          type: integer
+        status:
+          type: string
+          enum: [active, funded, closed]
+        urgencyLevel:
+          type: string
+          enum: [critical, high, medium]
+        imageUrl:
+          type: ["string", "null"]
+        medicalReportUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - patientName
+        - patientAge
+        - hospital
+        - targetAmount
+        - collectedAmount
+        - sharePrice
+        - totalShares
+        - soldShares
+        - status
+        - urgencyLevel
+        - imageUrl
+        - medicalReportUrl
+        - createdAt
+        - updatedAt
+
+    CreateCaseBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        patientName:
+          type: string
+        patientAge:
+          type: integer
+        hospital:
+          type: string
+        targetAmount:
+          type: number
+        sharePrice:
+          type: number
+        urgencyLevel:
+          type: string
+          enum: [critical, high, medium]
+        imageUrl:
+          type: ["string", "null"]
+        medicalReportUrl:
+          type: ["string", "null"]
+      required:
+        - title
+        - description
+        - patientName
+        - patientAge
+        - hospital
+        - targetAmount
+        - sharePrice
+        - urgencyLevel
+
+    UpdateCaseBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        patientName:
+          type: string
+        patientAge:
+          type: integer
+        hospital:
+          type: string
+        targetAmount:
+          type: number
+        sharePrice:
+          type: number
+        urgencyLevel:
+          type: string
+          enum: [critical, high, medium]
+        status:
+          type: string
+          enum: [active, funded, closed]
+        imageUrl:
+          type: ["string", "null"]
+        medicalReportUrl:
+          type: ["string", "null"]
+
+    DonateBody:
+      type: object
+      properties:
+        donorName:
+          type: string
+        shares:
+          type: integer
+        coverFees:
+          type: boolean
+        anonymous:
+          type: boolean
+      required:
+        - donorName
+        - shares
+
+    Donation:
+      type: object
+      properties:
+        id:
+          type: integer
+        caseId:
+          type: integer
+        donorName:
+          type: string
+        shares:
+          type: integer
+        amount:
+          type: number
+        coverFees:
+          type: boolean
+        anonymous:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - caseId
+        - donorName
+        - shares
+        - amount
+        - coverFees
+        - anonymous
+        - createdAt
+
+    Vote:
+      type: object
+      properties:
+        id:
+          type: integer
+        caseId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        expense:
+          type: number
+        yesCount:
+          type: integer
+        noCount:
+          type: integer
+        status:
+          type: string
+          enum: [open, closed]
+        result:
+          type: ["string", "null"]
+          enum: ["approved", "rejected", null]
+        createdAt:
+          type: string
+        closedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - caseId
+        - title
+        - description
+        - expense
+        - yesCount
+        - noCount
+        - status
+        - result
+        - createdAt
+        - closedAt
+
+    CreateVoteBody:
+      type: object
+      properties:
+        caseId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        expense:
+          type: number
+      required:
+        - caseId
+        - title
+        - description
+        - expense
+
+    CastVoteBody:
+      type: object
+      properties:
+        choice:
+          type: string
+          enum: [yes, no]
+        voterName:
+          type: string
+      required:
+        - choice
+        - voterName
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, sub_admin, moderator, donor]
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - role
+        - createdAt
+
+    CreateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, sub_admin, moderator, donor]
+      required:
+        - name
+        - email
+        - role
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, sub_admin, moderator, donor]
+
+    StatsOverview:
+      type: object
+      properties:
+        totalDonations:
+          type: number
+        totalCases:
+          type: integer
+        activeCases:
+          type: integer
+        fundedCases:
+          type: integer
+        totalDonors:
+          type: integer
+        totalSharesSold:
+          type: integer
+        averageFundingPercent:
+          type: number
+      required:
+        - totalDonations
+        - totalCases
+        - activeCases
+        - fundedCases
+        - totalDonors
+        - totalSharesSold
+        - averageFundingPercent
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [donation, case_funded, case_created, vote_result]
+        donorName:
+          type: ["string", "null"]
+        caseTitle:
+          type: string
+        caseId:
+          type: integer
+        amount:
+          type: ["number", "null"]
+        shares:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - type
+        - donorName
+        - caseTitle
+        - caseId
+        - amount
+        - shares
+        - createdAt
