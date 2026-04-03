@@ -1,0 +1,48 @@
+Act as an expert Full-Stack Developer. The UI looks fantastic! Now, we need to implement massive functional updates, dynamic data routing, and Role-Based Access Control (RBAC). Read the following 7 core requirements carefully and execute them step-by-step.
+
+CORE REQUIREMENTS:
+
+1. Authentication & RBAC (Role Management):
+- Implement Firebase Auth (Email/Password).
+- Add "Login/Register" buttons in the Navbar.
+- The email "mahmoudalgdawy@gmail.com" must automatically be assigned the "SuperAdmin" role in Firestore upon registration.
+- In the Admin Panel, create a "Staff Management" page where the SuperAdmin can invite users and assign them roles (Admin, Moderator) with specific permissions.
+
+2. Direct Contact Button:
+- Add a highly visible "تواصل للخير" (Contact for Good) button (e.g., floating button or in the Navbar) that links directly to WhatsApp: https://wa.me/201030163755 for inquiries.
+
+3. Secure Admin Panel Visibility:
+- The "لوحة التحكم" (Admin Panel) link in the Navbar MUST BE HIDDEN for guests and normal users. It should ONLY render if the logged-in user has a SuperAdmin, Admin, or Moderator role. 
+
+4 & 7. Case Management & Notifications System:
+- Public Form: Add a "إضافة حالة جديدة" (New Case) button on the Homepage. It opens a form with mandatory fields (Submitter Name, Phone, Address) and Case Details. Submitting sets the case status to 'pending'.
+- Admin UI (Case Management): Inside the Admin Panel, add a UI to directly create/edit/delete cases without touching the database manually.
+- Admin UI (Notifications/Approvals): Add an "إشعارات" (Notifications) tab in the Admin Panel where Admins receive alerts for user-submitted cases. The Admin can review, Accept (publishes it), or Reject it.
+- Missing Feature: Add the "Community Board" (Group Chat & Voting for extra funds) on the side/bottom of the Case Details Page. New chat messages should trigger an admin notification.
+
+5. Functional Share Button:
+- Make the "مشاركة الحالة" (Share Case) button functional using the Web Share API. If unsupported, fallback to 'Copy Link to Clipboard' with a success toast notification.
+
+6. News Section & Vodafone Cash Payment Flow:
+- Navbar: Add an "الأخبار" (News) tab for platform announcements and urgent updates.
+- Manual Payment Flow (Vodafone Cash MVP): 
+  Update the Donation Checkout flow:
+  1. User selects number of shares.
+  2. Select payment method "Vodafone Cash".
+  3. User inputs their sending phone number for verification.
+  4. UI displays the receiving number: "01030163755".
+  5. User uploads a screenshot of the transfer (Needs Firebase Storage integration).
+  6. On submit, show a "Pending Verification" success screen.
+  7. This triggers a notification in the Admin Panel -> "Pending Donations". Admin reviews the screenshot -> Clicks "Verify & Approve" -> The donation is added to the case total, and the user gets a success notification.
+
+EXECUTION PLAN (STRICT):
+Do not generate all the code at once. Wait for my exact command after completing each step:
+- Step 1: Setup Firebase Auth & Firebase Storage, and provide the updated Firestore Rules for RBAC and image uploads.
+- Step 2: Navbar Updates (Auth state, Hide Admin button, News tab, WhatsApp link).
+- Step 3: Public Case Submission Form & fixing the Share Button logic.
+- Step 4: Vodafone Cash Payment Flow Modal (UI + Screenshot upload logic).
+- Step 5: Admin Panel Updates (Notifications UI, Case Approval, Direct Case Editing, Role Assignment).
+- Step 6: Case Details Updates (Community Board UI & Chat integration).
+
+Confirm you understand these 7 requirements, and provide the code/instructions for STEP 1 ONLY.
+Note: Ensure all new UI text is in Arabic (RTL).
