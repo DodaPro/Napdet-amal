@@ -1,0 +1,45 @@
+Act as the Replit Agent (Expert Full-Stack Developer). The current UI looks fantastic! Now, we need to implement massive functional updates, dynamic data routing, and Role-Based Access Control (RBAC) in this existing Next.js project. 
+
+Read the following 7 core requirements carefully. 
+IMPORTANT: You have access to my workspace. DO NOT attempt to write or edit all files at once. You must strictly follow the EXECUTION PLAN at the bottom step-by-step.
+
+CORE REQUIREMENTS:
+
+1. Authentication & RBAC (Role Management):
+- Implement Firebase Auth (Email/Password).
+- Add "Login/Register" buttons in the Navbar.
+- The email "mahmoudalgdawy@gmail.com" must automatically be assigned the "SuperAdmin" role in Firestore upon registration.
+- In the Admin Panel, create a "Staff Management" page where the SuperAdmin can invite users and assign them roles (Admin, Moderator).
+
+2. Direct Contact Button:
+- Add a highly visible "تواصل للخير" button that links directly to WhatsApp: https://wa.me/201030163755.
+
+3. Secure Admin Panel Visibility:
+- The "لوحة التحكم" link in the Navbar MUST BE HIDDEN for guests and normal users. Render it ONLY if the logged-in user has a SuperAdmin, Admin, or Moderator role.
+
+4 & 7. Case Management & Notifications System:
+- Public Form: Add an "إضافة حالة جديدة" button on the Homepage. It opens a form with mandatory fields (Name, Phone, Address) and Case Details. Submitting sets case status to 'pending'.
+- Admin UI (Cases): Add UI to directly create/edit/delete cases.
+- Admin UI (Notifications/Approvals): Add an "إشعارات" tab in the Admin Panel for user-submitted cases. The Admin can review, Accept (publishes it), or Reject it.
+- Missing Feature: Add the "Community Board" (Group Chat & Voting) on the Case Details Page.
+
+5. Functional Share Button:
+- Make "مشاركة الحالة" functional using the Web Share API. If unsupported, fallback to 'Copy Link to Clipboard'.
+
+6. News Section & Vodafone Cash Payment Flow:
+- Navbar: Add an "الأخبار" tab for announcements.
+- Vodafone Cash Flow: 
+  1. User selects shares.
+  2. Selects "Vodafone Cash".
+  3. Inputs their sending phone number.
+  4. UI displays receiving number: "01030163755".
+  5. User uploads a screenshot of the transfer (Firebase Storage).
+  6. Submit triggers "Pending Verification".
+  7. Admin gets notification in "Pending Donations", reviews screenshot, and clicks "Verify & Approve" to add funds.
+
+EXECUTION PLAN (STRICT INSTRUCTIONS FOR AGENT):
+- Rule 1: Use Arabic (RTL) for all UI text.
+- Rule 2: Use EGP (جنيه) as currency.
+- Rule 3: Stop generating after completing the requested step and ask for my permission to proceed.
+
+-> Start with STEP 1: Setup Firebase Auth, configure Firestore Rules for RBAC, setup Firebase Storage for screenshots, and provide the logic. Do NOT edit UI components yet. Wait for my confirmation.
