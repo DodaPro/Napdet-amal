@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { getFirebaseAuthError } from "@/lib/firebase-errors";
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -13,20 +14,22 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email || !password) return;
     setLoading(true);
+    setErrorDetail(null);
     try {
       await signIn(email, password);
       navigate("/");
       toast({ title: "تم تسجيل الدخول بنجاح", description: "مرحباً بك في نبضة أمل" });
     } catch (err: any) {
-      const msg = err.code === "auth/invalid-credential"
-        ? "البريد الإلكتروني أو كلمة المرور غير صحيحة"
-        : "حدث خطأ أثناء تسجيل الدخول";
-      toast({ title: "خطأ", description: msg, variant: "destructive" });
+      const code = err?.code ?? "unknown";
+      const msg = getFirebaseAuthError(code);
+      setErrorDetail(msg);
+      toast({ title: "خطأ في تسجيل الدخول", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -41,6 +44,13 @@ export default function LoginPage() {
         </div>
         <div className="bg-card border border-border rounded-2xl p-8 shadow-md">
           <h2 className="text-xl font-bold text-foreground mb-6">تسجيل الدخول</h2>
+
+          {errorDetail && (
+            <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm px-4 py-3 text-right">
+              {errorDetail}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">البريد الإلكتروني</Label>
@@ -52,6 +62,7 @@ export default function LoginPage() {
                 placeholder="your@email.com"
                 required
                 dir="ltr"
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -64,12 +75,14 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 required
                 dir="ltr"
+                autoComplete="current-password"
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "جارٍ تسجيل الدخول..." : "دخول"}
             </Button>
           </form>
+
           <p className="text-center text-sm text-muted-foreground mt-4">
             ليس لديك حساب؟{" "}
             <Link href="/register" className="text-primary font-medium hover:underline">
