@@ -45,17 +45,41 @@ pnpm workspace monorepo using TypeScript. This is a micro-donation charity platf
 - Font: Tajawal (Arabic-first)
 - No emojis in the UI
 
+## Authentication & Authorization
+
+- **Firebase Auth** — Email/password sign-in and registration
+- **Firestore** — User profiles, notifications, pending cases/donations, messages, news
+- **Firebase Storage** — Donation payment screenshots
+- **Roles**: `super_admin`, `admin`, `moderator`, `donor`
+- Super admin email: `mahmoudalgdawy@gmail.com` (auto-assigned on registration)
+- `ProtectedRoute` component guards admin pages (redirects to `/login` if unauthenticated or insufficient role)
+- Auth context: `src/contexts/AuthContext.tsx` (AuthProvider + useAuth hook)
+
+## Firebase Firestore Collections
+
+- `users` — User profiles with roles
+- `notifications` — Admin notification feed (case submissions, pending donations)
+- `pending_cases` — Case submissions awaiting admin approval
+- `pending_donations` — Donation screenshots awaiting admin verification
+- `messages` — Community board messages per case
+- `news` — Platform news/announcements
+
 ## Pages
 
 - `/` — الرئيسية: Hero + Active Case Cards grid
 - `/cases/:id` — تفاصيل الحالة: Case story, donation with share selector + fee toggle
 - `/transparency` — الشفافية: Funded cases with "Mission Accomplished" stamp
 - `/community` — لجنة المجتمع: Community voting board
-- `/admin` — لوحة التحكم: Admin dashboard with sidebar
+- `/news` — الأخبار: News/announcements from Firestore
+- `/login` — تسجيل الدخول: Firebase email/password login
+- `/register` — إنشاء حساب: Firebase registration (auto-assigns role)
+- `/admin` — لوحة التحكم: Admin dashboard with sidebar (requires admin role)
+- `/admin/notifications` — الإشعارات: Review/approve pending cases & donations
 - `/admin/cases` — إدارة الحالات: Cases management table
 - `/admin/cases/new` — إضافة حالة: Create case form
 - `/admin/donations` — التبرعات: Donations table
-- `/admin/users` — المستخدمون: Staff management with role assignment
+- `/admin/users` — المستخدمون: User listing
+- `/admin/staff` — إدارة الفريق: Role management (super_admin only)
 
 ## API Endpoints
 
