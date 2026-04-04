@@ -30,7 +30,7 @@ export default function AdminStaff() {
   }
 
   async function handleRoleChange(uid: string, role: FirestoreUser["role"]) {
-    if (uid === user?.uid) {
+    if (uid === String(user?.id)) {
       toast({ title: "لا يمكنك تغيير دورك الخاص", variant: "destructive" });
       return;
     }
@@ -85,7 +85,7 @@ export default function AdminStaff() {
                       </Badge>
                     </td>
                     <td className="py-3 px-4">
-                      {u.uid === user?.uid ? (
+                      {u.uid === String(user?.id) ? (
                         <span className="text-muted-foreground text-xs">(حسابك)</span>
                       ) : (
                         <Select

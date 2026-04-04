@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { getFirebaseAuthError } from "@/lib/firebase-errors";
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -26,10 +25,9 @@ export default function LoginPage() {
       navigate("/");
       toast({ title: "تم تسجيل الدخول بنجاح", description: "مرحباً بك في نبضة أمل" });
     } catch (err: any) {
-      const code = err?.code ?? "unknown";
-      const msg = getFirebaseAuthError(code);
+      const msg = err?.message ?? "حدث خطأ أثناء تسجيل الدخول";
       setErrorDetail(msg);
-      toast({ title: "خطأ في تسجيل الدخول", description: msg, variant: "destructive" });
+      toast({ title: "خطأ", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }

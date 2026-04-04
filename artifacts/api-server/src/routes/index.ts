@@ -5,9 +5,11 @@ import donationsRouter from "./donations";
 import votesRouter from "./votes";
 import usersRouter from "./users";
 import statsRouter from "./stats";
+import authRouter from "./auth";
 
 const router: IRouter = Router();
 
+router.use(authRouter);
 router.use(healthRouter);
 router.use(casesRouter);
 router.use(donationsRouter);

@@ -68,7 +68,7 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground hidden md:block">
-                  {user.displayName || user.email}
+                  {user.name || user.email}
                 </span>
                 <Button size="sm" variant="outline" onClick={handleSignOut}>
                   خروج

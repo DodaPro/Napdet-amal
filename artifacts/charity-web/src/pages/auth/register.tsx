@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { getFirebaseAuthError } from "@/lib/firebase-errors";
 
 export default function RegisterPage() {
   const { signUp } = useAuth();
@@ -31,10 +30,9 @@ export default function RegisterPage() {
       navigate("/");
       toast({ title: "تم إنشاء الحساب", description: `مرحباً يا ${name}، أنت الآن عضو في نبضة أمل` });
     } catch (err: any) {
-      const code = err?.code ?? "unknown";
-      const msg = getFirebaseAuthError(code);
+      const msg = err?.message ?? "حدث خطأ أثناء إنشاء الحساب";
       setErrorDetail(msg);
-      toast({ title: "خطأ في إنشاء الحساب", description: msg, variant: "destructive" });
+      toast({ title: "خطأ", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
