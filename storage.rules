@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // -------------------------------------------------------
+    // Helper functions
+    // -------------------------------------------------------
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        request.auth.token.email == "mahmoudalgdawy@gmail.com";
+    }
+
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isUnder5MB() {
+      return request.resource.size <= 5 * 1024 * 1024;
+    }
+
+    // -------------------------------------------------------
+    // Donation payment screenshots
+    // Path: /donation-screenshots/{filename}
+    // -------------------------------------------------------
+    match /donation-screenshots/{filename} {
+      // Any authenticated user can upload a screenshot.
+      // Must be an image file under 5 MB.
+      allow write: if isAuthenticated() && isImageFile() && isUnder5MB();
+
+      // Only authenticated users can read screenshots.
+      allow read: if isAuthenticated();
+    }
+
+    // -------------------------------------------------------
+    // Case cover images (admin uploads)
+    // Path: /case-images/{filename}
+    // -------------------------------------------------------
+    match /case-images/{filename} {
+      // Only authenticated users can upload case images.
+      allow write: if isAuthenticated() && isImageFile() && isUnder5MB();
+
+      // Anyone can view case images (displayed publicly on the site).
+      allow read: if true;
+    }
+
+    // -------------------------------------------------------
+    // Deny everything else by default
+    // -------------------------------------------------------
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

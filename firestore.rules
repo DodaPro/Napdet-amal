@@ -1,0 +1,169 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------
+    // Helper functions
+    // -------------------------------------------------------
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        request.auth.token.email == "mahmoudalgdawy@gmail.com";
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        isSuperAdmin() ||
+        getUserRole() == "admin" ||
+        getUserRole() == "super_admin"
+      );
+    }
+
+    function isModerator() {
+      return isAuthenticated() && (
+        isSuperAdmin() ||
+        getUserRole() == "admin" ||
+        getUserRole() == "super_admin" ||
+        getUserRole() == "moderator"
+      );
+    }
+
+    function isDonor() {
+      return isAuthenticated();
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // -------------------------------------------------------
+    // /users/{uid}
+    // -------------------------------------------------------
+    match /users/{uid} {
+      // Any authenticated user can read their own profile.
+      // Admins can read all profiles.
+      allow read: if isOwner(uid) || isAdmin();
+
+      // Users can create their own profile on registration.
+      allow create: if isOwner(uid) &&
+        request.resource.data.keys().hasAll(["uid", "email", "name", "role", "createdAt"]) &&
+        request.resource.data.role == "donor";
+
+      // Users can update their own name only.
+      // Admins can update any field (including role).
+      allow update: if (isOwner(uid) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["name"])) ||
+        isAdmin();
+
+      // Only super admin can delete user records.
+      allow delete: if isSuperAdmin();
+    }
+
+    // -------------------------------------------------------
+    // /notifications/{notificationId}
+    // -------------------------------------------------------
+    match /notifications/{notificationId} {
+      // Moderators and above can read all notifications.
+      allow read: if isModerator();
+
+      // Any authenticated user can create a notification
+      // (triggered when they submit a case or donation).
+      allow create: if isAuthenticated();
+
+      // Only admins can update (mark as reviewed, etc.)
+      allow update: if isAdmin();
+
+      // Only super admin can delete notifications.
+      allow delete: if isSuperAdmin();
+    }
+
+    // -------------------------------------------------------
+    // /pending_cases/{caseId}
+    // -------------------------------------------------------
+    match /pending_cases/{caseId} {
+      // Moderators and above can list and read pending cases.
+      allow read: if isModerator();
+
+      // Any authenticated user can submit a new case request.
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasAll([
+          "title", "description", "patientName", "patientAge",
+          "hospital", "targetAmount", "sharePrice", "urgencyLevel",
+          "submitterName", "submitterPhone", "submitterAddress",
+          "status", "createdAt"
+        ]) &&
+        request.resource.data.status == "pending";
+
+      // Only admins can approve or reject (update status).
+      allow update: if isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"]);
+
+      // Only super admin can delete.
+      allow delete: if isSuperAdmin();
+    }
+
+    // -------------------------------------------------------
+    // /pending_donations/{donationId}
+    // -------------------------------------------------------
+    match /pending_donations/{donationId} {
+      // Moderators and above can list and read pending donations.
+      allow read: if isModerator();
+
+      // Any authenticated user can submit a donation for verification.
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasAll([
+          "caseId", "caseTitle", "donorName", "donorPhone",
+          "shares", "amount", "screenshotUrl", "status", "createdAt"
+        ]) &&
+        request.resource.data.status == "pending";
+
+      // Only admins can approve or reject.
+      allow update: if isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"]);
+
+      // Only super admin can delete.
+      allow delete: if isSuperAdmin();
+    }
+
+    // -------------------------------------------------------
+    // /messages/{messageId}
+    // -------------------------------------------------------
+    match /messages/{messageId} {
+      // All authenticated users can read community messages.
+      allow read: if isAuthenticated();
+
+      // Any authenticated user can post a message.
+      // Enforce that authorUid matches the caller.
+      allow create: if isAuthenticated() &&
+        request.resource.data.authorUid == request.auth.uid &&
+        request.resource.data.keys().hasAll(["caseId", "authorName", "authorUid", "text", "createdAt"]) &&
+        request.resource.data.text.size() <= 1000;
+
+      // Only the author or a moderator can update a message.
+      allow update: if isOwner(resource.data.authorUid) || isModerator();
+
+      // Author or moderator can delete.
+      allow delete: if isOwner(resource.data.authorUid) || isModerator();
+    }
+
+    // -------------------------------------------------------
+    // /news/{newsId}
+    // -------------------------------------------------------
+    match /news/{newsId} {
+      // Everyone (even unauthenticated) can read news.
+      allow read: if true;
+
+      // Only admins can create, update, or delete news.
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
