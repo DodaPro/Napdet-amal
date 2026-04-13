@@ -3,6 +3,16 @@ import { LayoutDashboard, Users, FileText, Heart, Activity, Bell, UserCog } from
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSuperAdmin } from "@/lib/auth-roles";
+import { useQuery } from "@tanstack/react-query";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+async function fetchUnreadCount(): Promise<number> {
+  const res = await fetch(`${BASE}/api/notifications/unread-count`, { credentials: "include" });
+  if (!res.ok) return 0;
+  const data = await res.json();
+  return data.count ?? 0;
+}
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -13,13 +23,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user } = useAuth();
   const superAdmin = isSuperAdmin(user?.role ?? null);
 
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["notifications-unread-count"],
+    queryFn: fetchUnreadCount,
+    refetchInterval: 30000,
+  });
+
   const navItems = [
-    { href: "/admin", label: "نظرة عامة", icon: LayoutDashboard, exact: true },
-    { href: "/admin/notifications", label: "الإشعارات", icon: Bell, exact: false },
-    { href: "/admin/cases", label: "إدارة الحالات", icon: FileText, exact: false },
-    { href: "/admin/donations", label: "التبرعات", icon: Heart, exact: false },
-    { href: "/admin/users", label: "المستخدمين", icon: Users, exact: false },
-    ...(superAdmin ? [{ href: "/admin/staff", label: "إدارة الفريق", icon: UserCog, exact: false }] : []),
+    { href: "/admin", label: "نظرة عامة", icon: LayoutDashboard, exact: true, badge: 0 },
+    { href: "/admin/notifications", label: "الإشعارات", icon: Bell, exact: false, badge: unreadCount },
+    { href: "/admin/cases", label: "إدارة الحالات", icon: FileText, exact: false, badge: 0 },
+    { href: "/admin/donations", label: "التبرعات", icon: Heart, exact: false, badge: 0 },
+    { href: "/admin/users", label: "المستخدمين", icon: Users, exact: false, badge: 0 },
+    ...(superAdmin ? [{ href: "/admin/staff", label: "إدارة الفريق", icon: UserCog, exact: false, badge: 0 }] : []),
   ];
 
   return (
@@ -50,7 +66,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 )}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {item.badge > 0 && (
+                  <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {item.badge > 9 ? "9+" : item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

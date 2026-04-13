@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, casesTable, donationsTable } from "@workspace/db";
+import { createNotification } from "../lib/notify";
 import {
   ListCasesQueryParams,
   CreateCaseBody,
@@ -164,6 +165,13 @@ router.post("/cases/:id/donate-vodafone", async (req, res): Promise<void> => {
     transferScreenshotUrl: vParsed.data.transferScreenshotUrl ?? null,
     senderPhone: vParsed.data.senderPhone,
   }).returning();
+
+  await createNotification({
+    type: "admin_vodafone_donation",
+    title: `تبرع فودافون بانتظار التحقق`,
+    message: `${vParsed.data.anonymous ? "فاعل خير" : vParsed.data.donorName} — ${vParsed.data.shares} سهم بقيمة ${totalAmount.toFixed(0)} جنيه`,
+    relatedId: donation.id,
+  });
 
   res.status(201).json({
     id: donation.id,

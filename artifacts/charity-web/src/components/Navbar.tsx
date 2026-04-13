@@ -3,13 +3,85 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isAdminRole } from "@/lib/auth-roles";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Bell } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const WHATSAPP_URL = "https://wa.me/201030163755";
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+type NotificationItem = {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+};
+
+async function fetchUnreadCount(): Promise<number> {
+  const res = await fetch(`${BASE}/api/notifications/unread-count`, { credentials: "include" });
+  if (!res.ok) return 0;
+  const data = await res.json();
+  return data.count ?? 0;
+}
+
+async function fetchNotifications(): Promise<NotificationItem[]> {
+  const res = await fetch(`${BASE}/api/notifications`, { credentials: "include" });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function markAllRead(): Promise<void> {
+  await fetch(`${BASE}/api/notifications/read-all`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+}
+
+async function markOneRead(id: number): Promise<void> {
+  await fetch(`${BASE}/api/notifications/${id}/read`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+}
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const isAdmin = isAdminRole(user?.role ?? null);
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["notifications-unread-count"],
+    queryFn: fetchUnreadCount,
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications-list"],
+    queryFn: fetchNotifications,
+    enabled: !!user,
+    staleTime: 30000,
+  });
+
+  const markAllMutation = useMutation({
+    mutationFn: markAllRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-list"] });
+    },
+  });
 
   async function handleSignOut() {
     await signOut();
@@ -17,7 +89,16 @@ export default function Navbar() {
     toast({ title: "تم تسجيل الخروج بنجاح" });
   }
 
-  const isAdmin = isAdminRole(user?.role ?? null);
+  function getTypeLabel(type: string) {
+    if (type === "admin_case_submission") return "طلب حالة جديدة";
+    if (type === "admin_vodafone_donation") return "تبرع فودافون";
+    if (type === "case_approved") return "حالة منشورة";
+    if (type === "donation_verified") return "تبرع مُوافق عليه";
+    return "إشعار";
+  }
+
+  const unread = notifications.filter(n => !n.isRead);
+  const hasNotifications = notifications.length > 0;
 
   return (
     <>
@@ -64,6 +145,80 @@ export default function Navbar() {
               </svg>
               تواصل للخير
             </a>
+
+            {user && (
+              <DropdownMenu dir="rtl">
+                <DropdownMenuTrigger asChild>
+                  <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
+                    <Bell className="w-5 h-5 text-foreground/70" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5 leading-none">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  <DropdownMenuLabel className="flex items-center justify-between">
+                    <span>الإشعارات</span>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={() => markAllMutation.mutate()}
+                        className="text-xs text-primary hover:underline font-normal"
+                      >
+                        قراءة الكل
+                      </button>
+                    )}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {!hasNotifications ? (
+                    <div className="py-6 text-center text-sm text-muted-foreground">
+                      لا توجد إشعارات
+                    </div>
+                  ) : (
+                    notifications.slice(0, 8).map(n => (
+                      <DropdownMenuItem
+                        key={n.id}
+                        className={`flex flex-col items-start gap-0.5 py-2.5 px-3 cursor-pointer ${
+                          !n.isRead ? "bg-primary/5" : ""
+                        }`}
+                        onClick={() => {
+                          if (!n.isRead) {
+                            markOneRead(n.id).then(() => {
+                              queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+                              queryClient.invalidateQueries({ queryKey: ["notifications-list"] });
+                            });
+                          }
+                          if (isAdmin) navigate("/admin/notifications");
+                        }}
+                      >
+                        <div className="flex items-center gap-2 w-full">
+                          {!n.isRead && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                          )}
+                          <span className={`text-xs font-semibold truncate ${!n.isRead ? "text-foreground" : "text-muted-foreground"}`}>
+                            {n.title}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-1 w-full pr-3.5">
+                          {n.message}
+                        </p>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                  {isAdmin && hasNotifications && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/notifications" className="text-center text-xs text-primary justify-center w-full py-2">
+                          عرض جميع الإشعارات
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {user ? (
               <div className="flex items-center gap-2">
