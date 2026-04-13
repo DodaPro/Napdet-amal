@@ -28,3 +28,9 @@ timeoutMs = 20000
 [nix]
 channel = "stable-25_05"
 packages = ["zip"]
+
+[userenv]
+
+[userenv.shared]
+VITE_CLOUDINARY_CLOUD_NAME = " dw5rctk7l"
+VITE_CLOUDINARY_UPLOAD_PRESET = "napdit_amal"
