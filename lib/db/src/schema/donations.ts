@@ -11,6 +11,10 @@ export const donationsTable = pgTable("donations", {
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   coverFees: boolean("cover_fees").notNull().default(false),
   anonymous: boolean("anonymous").notNull().default(false),
+  paymentMethod: text("payment_method"),
+  paymentStatus: text("payment_status"),
+  transferScreenshotUrl: text("transfer_screenshot_url"),
+  senderPhone: text("sender_phone"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

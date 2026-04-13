@@ -6,6 +6,7 @@ import votesRouter from "./votes";
 import usersRouter from "./users";
 import statsRouter from "./stats";
 import authRouter from "./auth";
+import caseSubmissionsRouter from "./caseSubmissions";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(donationsRouter);
 router.use(votesRouter);
 router.use(usersRouter);
 router.use(statsRouter);
+router.use(caseSubmissionsRouter);
 
 export default router;

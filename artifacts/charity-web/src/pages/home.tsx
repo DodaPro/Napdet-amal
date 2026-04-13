@@ -1,13 +1,53 @@
+import { useState } from "react";
 import { useListCases } from "@workspace/api-client-react";
 import Layout from "@/components/Layout";
 import CaseCard from "@/components/CaseCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Link } from "wouter";
-import { HeartPulse } from "lucide-react";
+import { HeartPulse, PlusCircle, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const { data: cases, isLoading } = useListCases({ status: "active", limit: 6 });
+  const [isSubmitOpen, setIsSubmitOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [form, setForm] = useState({ submitterName: "", phone: "", address: "", caseDetails: "" });
+  const { toast } = useToast();
+
+  const handleSubmit = async () => {
+    if (!form.submitterName.trim() || !form.phone.trim() || !form.address.trim() || !form.caseDetails.trim()) {
+      toast({ title: "يرجى ملء جميع الحقول المطلوبة", variant: "destructive" });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/case-submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("فشل الإرسال");
+      setSubmitSuccess(true);
+    } catch {
+      toast({ title: "حدث خطأ", description: "لم نتمكن من إرسال الطلب، يرجى المحاولة مرة أخرى", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setIsSubmitOpen(false);
+    setTimeout(() => {
+      setSubmitSuccess(false);
+      setForm({ submitterName: "", phone: "", address: "", caseDetails: "" });
+    }, 300);
+  };
 
   return (
     <Layout>
@@ -48,6 +88,13 @@ export default function Home() {
                 هذه الحالات الطبية تحتاج لتدخل سريع. يمكنك المساهمة بشراء أسهم تغطي جزءاً من التكلفة.
               </p>
             </div>
+            <Button
+              onClick={() => setIsSubmitOpen(true)}
+              className="flex items-center gap-2 shrink-0 h-12 px-6 rounded-full shadow"
+            >
+              <PlusCircle className="w-5 h-5" />
+              إضافة حالة جديدة
+            </Button>
           </div>
 
           {isLoading ? (
@@ -121,6 +168,91 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Case Submission Modal */}
+      <Dialog open={isSubmitOpen} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          {submitSuccess ? (
+            <div className="py-8 text-center space-y-4">
+              <div className="flex justify-center">
+                <CheckCircle2 className="w-16 h-16 text-success" />
+              </div>
+              <h3 className="text-2xl font-bold text-foreground">تم إرسال الطلب بنجاح!</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                شكراً لك. سيقوم فريقنا بمراجعة الحالة والتواصل معك في أقرب وقت.
+              </p>
+              <Button className="mt-4 w-full" onClick={handleClose}>
+                إغلاق
+              </Button>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold">إضافة حالة جديدة</DialogTitle>
+                <DialogDescription>
+                  أرسل تفاصيل الحالة وسيتواصل معك فريقنا لمتابعة الإجراءات.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="submitterName">اسم مقدم الطلب <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="submitterName"
+                    placeholder="الاسم الثلاثي"
+                    value={form.submitterName}
+                    onChange={(e) => setForm(f => ({ ...f, submitterName: e.target.value }))}
+                    dir="rtl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">رقم الهاتف <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="phone"
+                    placeholder="01xxxxxxxxx"
+                    value={form.phone}
+                    onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
+                    dir="rtl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">العنوان <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="address"
+                    placeholder="المحافظة / المدينة / الحي"
+                    value={form.address}
+                    onChange={(e) => setForm(f => ({ ...f, address: e.target.value }))}
+                    dir="rtl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="caseDetails">تفاصيل الحالة <span className="text-destructive">*</span></Label>
+                  <Textarea
+                    id="caseDetails"
+                    placeholder="اكتب وصفاً للحالة الطبية، التشخيص، والمبلغ المطلوب إن أمكن..."
+                    value={form.caseDetails}
+                    onChange={(e) => setForm(f => ({ ...f, caseDetails: e.target.value }))}
+                    rows={4}
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="flex-row-reverse gap-3 sm:flex-row-reverse">
+                <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1">
+                  {isSubmitting ? "جاري الإرسال..." : "إرسال الطلب"}
+                </Button>
+                <Button variant="outline" onClick={handleClose} className="flex-1">
+                  إلغاء
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
