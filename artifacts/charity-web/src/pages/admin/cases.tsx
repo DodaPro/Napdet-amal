@@ -170,7 +170,7 @@ export default function AdminCases() {
                   ))}
                 </TableRow>
               ))
-            ) : cases && cases.length > 0 ? (
+            ) : Array.isArray(cases) && cases.length > 0 ? (
               cases.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium max-w-[300px] truncate" title={item.title}>
