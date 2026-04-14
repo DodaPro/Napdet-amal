@@ -38,6 +38,7 @@ pnpm workspace monorepo using TypeScript. This is a micro-donation charity platf
 - **users** — Platform users with roles: super_admin, sub_admin, moderator, donor
 - **case_submissions** — Public case submission requests (submitterName, phone, address, caseDetails, status: pending/approved/rejected)
 - **notifications** — Admin/user notifications (type, title, message, recipientId null=admin broadcast, relatedId, isRead)
+- **case_messages** — Community board messages per case (authorId FK users, type: message|vote_request, content, voteTitle, voteExpense)
 
 ## UI/UX Design
 
@@ -100,6 +101,8 @@ pnpm workspace monorepo using TypeScript. This is a micro-donation charity platf
 - `GET /api/notifications/unread-count` — Count for bell badge (returns 0 for unauthenticated)
 - `PATCH /api/notifications/:id/read` — Mark one as read
 - `PATCH /api/notifications/read-all` — Mark all as read
+- `GET /api/cases/:id/messages` — List community board messages for a case (public)
+- `POST /api/cases/:id/messages` — Post a message or vote_request to a case community board (authenticated); triggers admin notification
 
 ## Notification Bell (Navbar)
 
@@ -120,5 +123,6 @@ pnpm workspace monorepo using TypeScript. This is a micro-donation charity platf
 - `admin_vodafone_donation` — fired when user submits a Vodafone Cash donation
 - `case_approved` — broadcast when admin approves a case submission
 - `donation_verified` — broadcast when admin verifies a donation
+- `community_message` — fired when authenticated user posts a message or vote request on a case community board (admin broadcast)
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRoute } from "wouter";
 import { useGetCase, getGetCaseQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,9 +11,23 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Clock, Activity, MapPin, Share2, Info, Plus, Minus, HeartHandshake, CheckCircle2, Upload, Copy, Smartphone } from "lucide-react";
+import { Clock, Activity, MapPin, Share2, Info, Plus, Minus, HeartHandshake, CheckCircle2, Upload, Copy, Smartphone, MessageSquare, Send, Vote, Users, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface CaseMessage {
+  id: number;
+  caseId: number;
+  authorId: number;
+  authorName: string;
+  type: "message" | "vote_request";
+  content: string;
+  voteTitle: string | null;
+  voteExpense: string | null;
+  createdAt: string;
+}
 
 const VODAFONE_RECEIVING_NUMBER = "01030163755";
 
@@ -38,6 +52,114 @@ export default function CaseDetails() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Community Board state
+  const [messages, setMessages] = useState<CaseMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSendingMsg, setIsSendingMsg] = useState(false);
+  const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
+  const [voteTitle, setVoteTitle] = useState("");
+  const [voteExpense, setVoteExpense] = useState("");
+  const [voteDescription, setVoteDescription] = useState("");
+  const [isSendingVote, setIsSendingVote] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const fetchMessages = useCallback(async () => {
+    if (!caseId) return;
+    setMessagesLoading(true);
+    try {
+      const res = await fetch(`/api/cases/${caseId}/messages`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data);
+      }
+    } catch {
+      // silent
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [caseId]);
+
+  useEffect(() => {
+    if (caseId) fetchMessages();
+  }, [caseId, fetchMessages]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+    setIsSendingMsg(true);
+    try {
+      const res = await fetch(`/api/cases/${caseId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: newMessage.trim(), type: "message" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "حدث خطأ");
+      }
+      const msg = await res.json();
+      setMessages((prev) => [...prev, msg]);
+      setNewMessage("");
+    } catch (e: unknown) {
+      toast({ title: "خطأ", description: e instanceof Error ? e.message : "لم يتم الإرسال", variant: "destructive" });
+    } finally {
+      setIsSendingMsg(false);
+    }
+  };
+
+  const handleSendVoteRequest = async () => {
+    if (!voteTitle.trim() || !voteDescription.trim()) {
+      toast({ title: "البيانات مطلوبة", description: "يرجى تعبئة عنوان ووصف طلب التصويت", variant: "destructive" });
+      return;
+    }
+    if (!voteExpense || isNaN(parseFloat(voteExpense)) || parseFloat(voteExpense) <= 0) {
+      toast({ title: "المبلغ غير صحيح", description: "يرجى إدخال مبلغ صحيح", variant: "destructive" });
+      return;
+    }
+    setIsSendingVote(true);
+    try {
+      const res = await fetch(`/api/cases/${caseId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          content: voteDescription.trim(),
+          type: "vote_request",
+          voteTitle: voteTitle.trim(),
+          voteExpense: voteExpense.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "حدث خطأ");
+      }
+      const msg = await res.json();
+      setMessages((prev) => [...prev, msg]);
+      setVoteTitle("");
+      setVoteExpense("");
+      setVoteDescription("");
+      setIsVoteModalOpen(false);
+      toast({ title: "تم إرسال طلب التصويت", description: "سيراجع المسؤولون طلبك قريباً" });
+    } catch (e: unknown) {
+      toast({ title: "خطأ", description: e instanceof Error ? e.message : "لم يتم الإرسال", variant: "destructive" });
+    } finally {
+      setIsSendingVote(false);
+    }
+  };
+
+  function formatMessageTime(iso: string) {
+    const d = new Date(iso);
+    return d.toLocaleString("ar-EG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
 
   const resetModal = () => {
     setStep("select_method");
@@ -414,7 +536,208 @@ export default function CaseDetails() {
             </Button>
           </div>
         </div>
+
+        {/* Community Board */}
+        <div className="mt-10 bg-white rounded-xl border border-border overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-primary/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">لوحة المجتمع</h2>
+                <p className="text-xs text-muted-foreground">نقاش الحالة وطلبات التصويت على المصاريف الإضافية</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">{messages.length} رسالة</span>
+              <Button variant="outline" size="sm" onClick={fetchMessages} className="text-xs">
+                تحديث
+              </Button>
+            </div>
+          </div>
+
+          {/* Messages List */}
+          <div className="p-4 space-y-3 max-h-[480px] overflow-y-auto" dir="rtl">
+            {messagesLoading && messages.length === 0 ? (
+              <div className="py-10 text-center text-muted-foreground text-sm">
+                <div className="animate-pulse">جاري تحميل الرسائل...</div>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="py-10 text-center">
+                <MessageSquare className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+                <p className="text-muted-foreground">لا توجد رسائل بعد. كن أول من يبدأ النقاش!</p>
+              </div>
+            ) : (
+              messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex gap-3 ${user?.id === msg.authorId ? "flex-row-reverse" : "flex-row"}`}
+                >
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                    {msg.authorName.charAt(0)}
+                  </div>
+                  <div className={`max-w-[75%] ${user?.id === msg.authorId ? "items-end" : "items-start"} flex flex-col gap-1`}>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">{msg.authorName}</span>
+                      <span>{formatMessageTime(msg.createdAt)}</span>
+                    </div>
+                    {msg.type === "vote_request" ? (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2 text-right">
+                        <div className="flex items-center gap-2 text-amber-700 font-bold">
+                          <Vote className="w-4 h-4 shrink-0" />
+                          <span>طلب تصويت: {msg.voteTitle}</span>
+                        </div>
+                        <p className="text-sm text-amber-800">{msg.content}</p>
+                        {msg.voteExpense && (
+                          <div className="inline-block bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full">
+                            المبلغ المطلوب: {formatEGP(msg.voteExpense)}
+                          </div>
+                        )}
+                        <p className="text-xs text-amber-600">سيقوم فريق الإدارة بمراجعة هذا الطلب</p>
+                      </div>
+                    ) : (
+                      <div
+                        className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                          user?.id === msg.authorId
+                            ? "bg-primary text-primary-foreground rounded-tl-sm"
+                            : "bg-muted text-foreground rounded-tr-sm"
+                        }`}
+                      >
+                        {msg.content}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          <div className="border-t border-border p-4" dir="rtl">
+            {user ? (
+              <div className="space-y-3">
+                <div className="flex gap-2 items-end">
+                  <Textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="اكتب رسالتك للنقاش حول هذه الحالة..."
+                    className="resize-none text-sm min-h-[60px]"
+                    dir="rtl"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={isSendingMsg || !newMessage.trim()}
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    اضغط Enter للإرسال، Shift+Enter لسطر جديد
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsVoteModalOpen(true)}
+                    className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                  >
+                    <Vote className="w-3 h-3 ml-1" />
+                    طلب تصويت على مصروف إضافي
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-3 py-4 bg-muted/30 rounded-xl">
+                <Lock className="w-5 h-5 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  يجب{" "}
+                  <a href="/login" className="text-primary font-medium hover:underline">
+                    تسجيل الدخول
+                  </a>{" "}
+                  للمشاركة في النقاش
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Vote Request Modal */}
+      <Dialog open={isVoteModalOpen} onOpenChange={setIsVoteModalOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Vote className="w-5 h-5 text-amber-600" />
+              طلب تصويت على مصروف إضافي
+            </DialogTitle>
+            <DialogDescription>
+              اقترح مصروفاً إضافياً لهذه الحالة — سيقوم المجتمع بالتصويت عليه
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="vote-title">عنوان الاقتراح <span className="text-destructive">*</span></Label>
+              <Input
+                id="vote-title"
+                placeholder="مثال: تكاليف نقل المريض"
+                value={voteTitle}
+                onChange={(e) => setVoteTitle(e.target.value)}
+                dir="rtl"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="vote-expense">المبلغ المطلوب (جنيه) <span className="text-destructive">*</span></Label>
+              <Input
+                id="vote-expense"
+                placeholder="مثال: 500"
+                type="number"
+                min="1"
+                value={voteExpense}
+                onChange={(e) => setVoteExpense(e.target.value)}
+                dir="ltr"
+                className="text-left"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="vote-desc">وصف الاقتراح <span className="text-destructive">*</span></Label>
+              <Textarea
+                id="vote-desc"
+                placeholder="اشرح سبب الحاجة لهذا المبلغ الإضافي..."
+                value={voteDescription}
+                onChange={(e) => setVoteDescription(e.target.value)}
+                dir="rtl"
+                className="min-h-[80px] resize-none"
+              />
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
+              سيتم إرسال هذا الاقتراح إلى فريق الإدارة للمراجعة، وإشعار المجتمع للتصويت عليه.
+            </div>
+          </div>
+
+          <DialogFooter className="flex-row-reverse gap-3">
+            <Button onClick={handleSendVoteRequest} disabled={isSendingVote} className="flex-1 bg-amber-600 hover:bg-amber-700">
+              {isSendingVote ? "جاري الإرسال..." : "إرسال الاقتراح"}
+            </Button>
+            <Button variant="outline" onClick={() => setIsVoteModalOpen(false)} className="flex-1">
+              إلغاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Donation Modal */}
       <Dialog open={isModalOpen} onOpenChange={handleModalClose}>

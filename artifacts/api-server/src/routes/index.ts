@@ -9,6 +9,7 @@ import authRouter from "./auth";
 import caseSubmissionsRouter from "./caseSubmissions";
 import notificationsRouter from "./notifications";
 import adminDonationsRouter from "./adminDonations";
+import caseMessagesRouter from "./caseMessages";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(statsRouter);
 router.use(caseSubmissionsRouter);
 router.use(notificationsRouter);
 router.use(adminDonationsRouter);
+router.use(caseMessagesRouter);
 
 export default router;
