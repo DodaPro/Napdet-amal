@@ -6,8 +6,8 @@ export const messageTypeEnum = pgEnum("message_type", ["message", "vote_request"
 
 export const caseMessagesTable = pgTable("case_messages", {
   id: serial("id").primaryKey(),
-  caseId: integer("case_id").notNull().references(() => casesTable.id),
-  authorId: integer("author_id").notNull().references(() => usersTable.id),
+  caseId: integer("case_id").notNull().references(() => casesTable.id, { onDelete: "cascade" }),
+  authorId: integer("author_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   authorName: text("author_name").notNull(),
   type: messageTypeEnum("type").notNull().default("message"),
   content: text("content").notNull(),
